@@ -1,0 +1,46 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - ansible
+  - git
+  - python3-pip
+  - python3-yaml
+  - jq
+
+runcmd:
+  # Ensure ansible is up to date
+  - pip3 install --upgrade ansible
+
+write_files:
+  - path: /etc/ansible/ansible.cfg
+    content: |
+      [defaults]
+      host_key_checking = False
+      remote_tmp = /tmp/.ansible-${USER}/tmp
+      local_tmp = /tmp/.ansible-${USER}/tmp
+    permissions: "0644"
+
+  - path: /usr/local/bin/ansible-pull-wrapper.sh
+    content: |
+      #!/bin/bash
+      # Replace with your repository URL
+      REPO_URL="https://github.com/yourusername/your-ansible-repo.git"
+      BRANCH="main"
+      WORKDIR="/var/lib/ansible/local"
+
+      mkdir -p $WORKDIR
+      cd $WORKDIR
+
+      /usr/bin/ansible-pull -U $REPO_URL -C $BRANCH -d $WORKDIR
+    permissions: "0755"
+    # Run ansible-pull on first boot (will be merged with the existing runcmd section by cloud-init)
+    runcmd:
+      - /usr/local/bin/ansible-pull-wrapper.sh
+cron:
+  - name: ansible-pull
+    user: root
+    job: "/usr/local/bin/ansible-pull-wrapper.sh >> /var/log/ansible-pull.log 2>&1"
+    minute: "0"
+    hour: "*/2" # Run every 2 hours
