@@ -37,7 +37,7 @@ write_files:
     permissions: "0755"
     # Run ansible-pull on first boot (will be merged with the existing runcmd section by cloud-init)
     runcmd:
-      - /usr/local/bin/ansible-pull-wrapper.sh
+      - /usr/local/bin/ansible-pull-wrapper.sh >> /var/log/ansible-pull.log 2>&1
 cron:
   - name: ansible-pull
     user: root
