@@ -9,10 +9,6 @@ packages:
   - python3-yaml
   - jq
 
-runcmd:
-  # Ensure ansible is up to date
-  - pip3 install --upgrade ansible
-
 write_files:
   - path: /etc/ansible/ansible.cfg
     content: |
@@ -21,6 +17,10 @@ write_files:
       remote_tmp = /tmp/.ansible-${USER}/tmp
       local_tmp = /tmp/.ansible-${USER}/tmp
     permissions: "0644"
+
+  - owner: root:root
+    path: /etc/cron.d/ansible_pull
+    content: 15 * * * * root "/usr/local/bin/ansible-pull-wrapper.sh >> /var/log/ansible-pull.log 2>&1"
 
   - path: /usr/local/bin/ansible-pull-wrapper.sh
     content: |
@@ -38,9 +38,8 @@ write_files:
     # Run ansible-pull on first boot (will be merged with the existing runcmd section by cloud-init)
     runcmd:
       - /usr/local/bin/ansible-pull-wrapper.sh >> /var/log/ansible-pull.log 2>&1
-cron:
-  - name: ansible-pull
-    user: root
-    job: "/usr/local/bin/ansible-pull-wrapper.sh >> /var/log/ansible-pull.log 2>&1"
-    minute: "0"
-    hour: "*/2" # Run every 2 hours
+
+runcmd:
+  # Ensure ansible is up to date
+  - pip3 install --upgrade ansible
+  - /usr/local/bin/ansible-pull-wrapper.sh
